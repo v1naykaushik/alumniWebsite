@@ -285,8 +285,6 @@ namespace AlumniWebsite
         // Method to get user affiliations
         private List<int> GetUserAffiliations(Guid registrationId)
         {
-
-
             List<int> affiliations = new List<int>();
 
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -387,13 +385,164 @@ namespace AlumniWebsite
                 return null;
             }
         }
+        protected void btnEditUser_Click(object sender, EventArgs e)
+        {
+            if (Session["EditUserID"] == null)
+            {
+                // Get the registration ID from the displayed user info
+                DataTable userData = (DataTable)ViewState["ExistingUserData"];
 
+                if (userData != null && userData.Rows.Count > 0)
+                {
+                    DataRow row = userData.Rows[0];
+                    Guid registrationId = new Guid(row["RegistrationId"].ToString());
+
+                    // Store the registration ID in session for later use
+                    Session["EditUserID"] = registrationId;
+
+                    // Populate the form with the user's data
+                    PopulateFormWithUserData(userData);
+
+                    // Show message to the user
+                    ShowMessage("You are now editing your information. Make changes and click Submit to update.", true);
+
+                    // Change the submit button text to indicate update
+                    btnSubmit.Text = "Update Information";
+
+                    // Hide the existing user panel
+                    pnlExistingUser.Visible = false;
+
+                    Session["RegistrationID"] = registrationId;
+                    
+
+                }
+            }
+        }
+        private void PopulateFormWithUserData(DataTable userData)
+        {
+            if (userData != null && userData.Rows.Count > 0)
+            {
+                DataRow row = userData.Rows[0];
+
+                try
+                {
+                    // Personal Information
+                    string salutation = row["Salutation"].ToString();
+                    if (!string.IsNullOrEmpty(salutation))
+                    {
+                        ListItem item = ddlSalutation.Items.FindByText(salutation);
+                        if (item != null)
+                            ddlSalutation.SelectedValue = item.Value;
+                    }
+
+                    txtFirstName.Text = row["FirstName"].ToString();
+                    txtMiddleName.Text = row["MiddleName"].ToString();
+                    txtLastName.Text = row["LastName"].ToString();
+
+                    string gender = row["Gender"].ToString();
+                    if (!string.IsNullOrEmpty(gender))
+                    {
+                        ListItem item = ddlGender.Items.FindByText(gender);
+                        if (item != null)
+                            ddlGender.SelectedValue = item.Value;
+                    }
+
+                    // Handle date format properly
+                    if (row["DateofBirth"] != DBNull.Value)
+                    {
+                        DateTime dob = Convert.ToDateTime(row["DateofBirth"]);
+                        txtDOB.Text = dob.ToString("yyyy-MM-dd"); // Adjust format as needed
+                    }
+
+                    txtEmail.Text = row["Email"].ToString();
+                    txtContactNumber.Text = row["ContactNumber"].ToString();
+                    txtNationality.Text = row["Nationality"].ToString();
+
+                    // Country and State
+                    string country = row["Country"].ToString();
+                    if (!string.IsNullOrEmpty(country))
+                    {
+                        ListItem item = ddlCountry.Items.FindByText(country);
+                        if (item != null)
+                        {
+                            ddlCountry.SelectedValue = item.Value;
+                            // Load the states for this country
+                            int countryId = Convert.ToInt32(item.Value);
+                            LoadStates(countryId, ddlState);
+
+                            // Select the state
+                            string state = row["State"].ToString();
+                            if (!string.IsNullOrEmpty(state))
+                            {
+                                ListItem stateItem = ddlState.Items.FindByText(state);
+                                if (stateItem != null)
+                                    ddlState.SelectedValue = stateItem.Value;
+                            }
+                        }
+                    }
+
+                    // Professional Information
+                    txtDesignation.Text = row["Designation"].ToString();
+                    txtDepartment.Text = row["Department"].ToString();
+                    txtMajorArea.Text = row["MajorArea"].ToString();
+                    txtSubArea.Text = row["SubArea"].ToString();
+
+                    // Organization Information
+                    txtOrganizationName.Text = row["OrganizationName"].ToString();
+
+                    string orgCountry = row["OrganizationCountry"].ToString();
+                    if (!string.IsNullOrEmpty(orgCountry))
+                    {
+                        ListItem item = ddlOrganizationCountry.Items.FindByText(orgCountry);
+                        if (item != null)
+                        {
+                            ddlOrganizationCountry.SelectedValue = item.Value;
+                            // Load the states for this country
+                            int countryId = Convert.ToInt32(item.Value);
+                            LoadStates(countryId, ddlOrganizationState);
+
+                            // Select the state
+                            string orgState = row["OrganizationState"].ToString();
+                            if (!string.IsNullOrEmpty(orgState))
+                            {
+                                ListItem stateItem = ddlOrganizationState.Items.FindByText(orgState);
+                                if (stateItem != null)
+                                    ddlOrganizationState.SelectedValue = stateItem.Value;
+                            }
+                        }
+                    }
+
+                    txtOfficialEmail.Text = row["OfficialEmail"].ToString();
+                    txtOrganizationContact.Text = row["OrganizationContact"].ToString();
+                    txtOrganizationPIN.Text = row["OrganizationPIN"].ToString();
+                    txtAddressLine1.Text = row["AddressLine1"].ToString();
+                    txtAddressLine2.Text = row["AddressLine2"].ToString();
+
+                    // Load and select affiliations
+                    Guid registrationId = new Guid(row["RegistrationId"].ToString());
+                    List<int> userAffiliations = GetUserAffiliations(registrationId);
+
+                    foreach (ListItem item in cblAffiliations.Items)
+                    {
+                        item.Selected = userAffiliations.Contains(Convert.ToInt32(item.Value));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Error populating form: " + ex.Message);
+                    ShowMessage("Error loading user data. Please try again.", false);
+                }
+            }
+        }
         private void DisplayExistingUserInfo(DataTable userData)
         {
             try
             {
                 if (userData != null && userData.Rows.Count > 0)
                 {
+                    // Store the user data in ViewState for later use in edit
+                    ViewState["ExistingUserData"] = userData;
+
                     DataRow row = userData.Rows[0];
                     Guid registrationId = new Guid(row["RegistrationId"].ToString());
 
@@ -502,22 +651,274 @@ namespace AlumniWebsite
 
         protected void btnSubmit_Click(object sender, EventArgs e)
         {
-            // Check if the email or contact number is already registered
-            string email = txtEmail.Text.Trim();
-            string contact = txtContactNumber.Text.Trim();
-            DataTable existingUser = CheckExistingUser(email, contact);
-
-            if (existingUser != null && existingUser.Rows.Count > 0)
+            if (Session["EditUserID"] != null)
             {
-                // User already exists - show the information
-                DisplayExistingUserInfo(existingUser);
-                ShowMessage("Registration cannot be completed. A user with this email or contact number already exists.", false);
-                return;
+                // This is an update operation
+                UpdateRegistration();
             }
+            else
+            {
+                // This is a new registration
+                // Check if the email or contact number is already registered
+                string email = txtEmail.Text.Trim();
+                string contact = txtContactNumber.Text.Trim();
+                DataTable existingUser = CheckExistingUser(email, contact);
 
-            // Process form submission
-            SaveRegistration();
+                if (existingUser != null && existingUser.Rows.Count > 0)
+                {
+                    // User already exists - show the information
+                    DisplayExistingUserInfo(existingUser);
+                    ShowMessage("Registration cannot be completed. A user with this email or contact number already exists.", false);
+                    return;
+                }
+
+                // Process form submission
+                SaveRegistration();
+            }
         }
+        private void UpdateRegistration()
+        {
+            try
+            {
+                // Get the registration ID from session
+                Guid registrationId = (Guid)Session["EditUserID"];
+
+                // Check if a new photo was uploaded
+                string photoFileName = null;
+                bool photoUpdated = false;
+
+                if (filePhoto.HasFile)
+                {
+                    // Validate file size (max 1 MB)
+                    if (filePhoto.PostedFile.ContentLength > 1048576) // 1 MB = 1048576 bytes
+                    {
+                        ShowMessage("Photo size cannot exceed 1 MB.", false);
+                        return;
+                    }
+
+                    // Validate file type
+                    string fileExtension = System.IO.Path.GetExtension(filePhoto.FileName).ToLower();
+                    if (fileExtension != ".jpg" && fileExtension != ".jpeg" && fileExtension != ".png")
+                    {
+                        ShowMessage("Only JPG, JPEG, or PNG files are allowed for the photo.", false);
+                        return;
+                    }
+
+                    // Generate a unique filename
+                    photoFileName = Guid.NewGuid().ToString() + fileExtension;
+                    photoUpdated = true;
+
+                    // Save the file to the server
+                    string uploadPath = Server.MapPath("~/LocalUploads/Photos/");
+
+                    // Create directory if it doesn't exist
+                    if (!System.IO.Directory.Exists(uploadPath))
+                    {
+                        System.IO.Directory.CreateDirectory(uploadPath);
+                    }
+
+                    filePhoto.SaveAs(uploadPath + photoFileName);
+                }
+
+                // Get selected affiliations
+                List<int> selectedAffiliations = GetSelectedAffiliations();
+                Session["SelectedAffiliations"] = selectedAffiliations;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    // Begin a transaction to ensure data consistency
+                    SqlTransaction transaction = conn.BeginTransaction();
+
+                    try
+                    {
+                        // Update AlumniRegistration table
+                        string updateRegistrationSql = @"
+                UPDATE AlumniRegistration SET
+                    Salutation = @Salutation,
+                    FirstName = @FirstName,
+                    MiddleName = @MiddleName,
+                    LastName = @LastName,
+                    Gender = @Gender,
+                    DateOfBirth = @DateOfBirth,
+                    Email = @Email,
+                    ContactNumber = @ContactNumber,
+                    Nationality = @Nationality,
+                    Country = @Country,
+                    State = @State,
+                    Designation = @Designation,
+                    Department = @Department,
+                    MajorArea = @MajorArea,
+                    SubArea = @SubArea,
+                    OrganizationName = @OrganizationName,
+                    OrganizationCountry = @OrganizationCountry,
+                    OrganizationState = @OrganizationState,
+                    OfficialEmail = @OfficialEmail,
+                    OrganizationContact = @OrganizationContact,
+                    OrganizationPIN = @OrganizationPIN,
+                    AddressLine1 = @AddressLine1,
+                    AddressLine2 = @AddressLine2,
+                    LastUpdateDate = @LastUpdateDate";
+
+                        // Add photo update if a new photo was uploaded
+                        if (photoUpdated)
+                        {
+                            updateRegistrationSql += ", PhotoFileName = @PhotoFileName";
+                        }
+
+                        updateRegistrationSql += " WHERE RegistrationId = @RegistrationId";
+
+                        using (SqlCommand cmd = new SqlCommand(updateRegistrationSql, conn, transaction))
+                        {
+                            // Add parameters
+                            cmd.Parameters.AddWithValue("@RegistrationId", registrationId);
+                            cmd.Parameters.AddWithValue("@Salutation", ddlSalutation.SelectedItem.Text);
+                            cmd.Parameters.AddWithValue("@FirstName", txtFirstName.Text.Trim());
+                            cmd.Parameters.AddWithValue("@MiddleName",
+                                string.IsNullOrEmpty(txtMiddleName.Text.Trim()) ?
+                                (object)DBNull.Value : txtMiddleName.Text.Trim());
+                            cmd.Parameters.AddWithValue("@LastName", txtLastName.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Gender", ddlGender.SelectedItem.Text);
+
+                            // Handle date format properly
+                            DateTime dob;
+                            if (DateTime.TryParse(txtDOB.Text, out dob))
+                                cmd.Parameters.AddWithValue("@DateOfBirth", dob);
+                            else
+                                cmd.Parameters.AddWithValue("@DateOfBirth", DBNull.Value);
+
+                            cmd.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
+                            cmd.Parameters.AddWithValue("@ContactNumber", txtContactNumber.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Nationality", txtNationality.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Country", ddlCountry.SelectedItem.Text);
+                            cmd.Parameters.AddWithValue("@State", ddlState.SelectedItem.Text);
+                            cmd.Parameters.AddWithValue("@Designation", txtDesignation.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Department",
+                                string.IsNullOrEmpty(txtDepartment.Text.Trim()) ?
+                                (object)DBNull.Value : txtDepartment.Text.Trim());
+                            cmd.Parameters.AddWithValue("@MajorArea", txtMajorArea.Text.Trim());
+                            cmd.Parameters.AddWithValue("@SubArea",
+                                string.IsNullOrEmpty(txtSubArea.Text.Trim()) ?
+                                (object)DBNull.Value : txtSubArea.Text.Trim());
+                            cmd.Parameters.AddWithValue("@OrganizationName", txtOrganizationName.Text.Trim());
+                            cmd.Parameters.AddWithValue("@OrganizationCountry", ddlOrganizationCountry.SelectedItem.Text);
+                            cmd.Parameters.AddWithValue("@OrganizationState", ddlOrganizationState.SelectedItem.Text);
+                            cmd.Parameters.AddWithValue("@OfficialEmail", txtOfficialEmail.Text.Trim());
+                            cmd.Parameters.AddWithValue("@OrganizationContact", txtOrganizationContact.Text.Trim());
+                            cmd.Parameters.AddWithValue("@OrganizationPIN", txtOrganizationPIN.Text.Trim());
+                            cmd.Parameters.AddWithValue("@AddressLine1", txtAddressLine1.Text.Trim());
+                            cmd.Parameters.AddWithValue("@AddressLine2",
+                                string.IsNullOrEmpty(txtAddressLine2.Text.Trim()) ?
+                                (object)DBNull.Value : txtAddressLine2.Text.Trim());
+                            cmd.Parameters.AddWithValue("@LastUpdateDate", DateTime.Now);
+
+                            if (photoUpdated)
+                            {
+                                cmd.Parameters.AddWithValue("@PhotoFileName", photoFileName);
+                            }
+
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // Update affiliations - first delete existing ones
+                        string deleteAffiliationsSql = "DELETE FROM UserAffiliations WHERE RegistrationID = @RegistrationID";
+                        using (SqlCommand cmdDelete = new SqlCommand(deleteAffiliationsSql, conn, transaction))
+                        {
+                            cmdDelete.Parameters.AddWithValue("@RegistrationID", registrationId);
+                            cmdDelete.ExecuteNonQuery();
+                        }
+
+                        // Then insert the new selections
+                        if (selectedAffiliations.Count > 0)
+                        {
+                            SaveUserAffiliations(registrationId, selectedAffiliations, conn, transaction);
+                        }
+
+                        // Commit the transaction
+                        transaction.Commit();
+
+                        // Clear the edit session variable
+                        Session.Remove("EditUserID");
+
+                        // Reset the submit button text
+                        btnSubmit.Text = "Submit";
+
+                        // Show success message
+                        ShowMessage("Your information has been successfully updated!", true);
+
+                        // Fetch the updated user information and display it
+                        DataTable updatedUser = GetUserDataById(registrationId);
+                        if (updatedUser != null && updatedUser.Rows.Count > 0)
+                        {
+                            DisplayExistingUserInfo(updatedUser);
+                        }
+
+                        Response.Redirect("~/AffiliationsEdit.aspx");
+
+                        // Reset the form for potential new entries
+                        //Reset();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Roll back the transaction if something fails
+                        transaction.Rollback();
+
+                        // Log the exception (in a real application)
+                        System.Diagnostics.Debug.WriteLine("Database Error: " + ex.Message);
+
+                        // For debugging in development environments, you could show more details
+#if DEBUG
+                        ShowMessage("Database Error: " + ex.Message, false);
+#else
+                ShowMessage("An error occurred while updating your information. Please try again.", false);
+#endif
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (in a real application)
+                System.Diagnostics.Debug.WriteLine("General Error: " + ex.Message);
+
+                // For debugging in development environments
+#if DEBUG
+                ShowMessage("Error: " + ex.Message, false);
+#else
+        ShowMessage("An error occurred while processing your update. Please try again.", false);
+#endif
+            }
+        }
+
+        // Method to get user data by ID
+        private DataTable GetUserDataById(Guid registrationId)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = "SELECT * FROM AlumniRegistration WHERE RegistrationId = @RegistrationId";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@RegistrationId", registrationId);
+
+                        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        adapter.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error in a real application
+                Console.WriteLine(ex.Message);
+                ShowMessage("An error occurred while retrieving user data. Please try again.", false);
+                return null;
+            }
+        }
+
 
         private void SaveRegistration()
         {
@@ -546,7 +947,7 @@ namespace AlumniWebsite
                     photoFileName = Guid.NewGuid().ToString() + fileExtension;
 
                     // Save the file to the server
-                    string uploadPath = Server.MapPath("~/Uploads/Photos/");
+                    string uploadPath = Server.MapPath("~/LocalUploads/Photos/");
 
                     // Create directory if it doesn't exist
                     if (!System.IO.Directory.Exists(uploadPath))
@@ -704,6 +1105,13 @@ namespace AlumniWebsite
 
         private void Reset()
         {
+            // Clear the edit user ID from session
+            if (Session["EditUserID"] != null)
+            {
+                Session.Remove("EditUserID");
+                btnSubmit.Text = "Submit"; // Reset button text
+            }
+
             // Clear all form fields
             txtRegisteredEmail.Text = string.Empty;
             txtRegisteredContact.Text = string.Empty;
@@ -714,15 +1122,11 @@ namespace AlumniWebsite
             txtEmail.Text = string.Empty;
             txtContactNumber.Text = string.Empty;
             txtNationality.Text = string.Empty;
-            // txtCountry.Text = string.Empty;
-            // txtState.Text = string.Empty;
             txtDesignation.Text = string.Empty;
             txtDepartment.Text = string.Empty;
             txtMajorArea.Text = string.Empty;
             txtSubArea.Text = string.Empty;
             txtOrganizationName.Text = string.Empty;
-            // txtOrganizationCountry.Text = string.Empty;
-            // txtOrganizationState.Text = string.Empty;
             txtOfficialEmail.Text = string.Empty;
             txtOrganizationContact.Text = string.Empty;
             txtOrganizationPIN.Text = string.Empty;

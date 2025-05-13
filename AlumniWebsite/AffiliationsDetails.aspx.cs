@@ -12,7 +12,8 @@ namespace AlumniWebsite
     public partial class AffiliationsDetails : System.Web.UI.Page
     {
         // Dictionaries to store temporary project and seminar data for each affiliation
-        private Dictionary<int, List<ProjectSeminar>> _projectSeminarsData;
+        private Dictionary<int, List<Project>> _projectsData;
+        private Dictionary<int, List<Seminar>> _seminarsData;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -26,21 +27,30 @@ namespace AlumniWebsite
                     return;
                 }
 
-                // Initialize the dictionary for temporary project/seminar data
-                _projectSeminarsData = new Dictionary<int, List<ProjectSeminar>>();
-                Session["ProjectSeminarsData"] = _projectSeminarsData;
+                // Initialize the dictionaries for temporary project/seminar data
+                _projectsData = new Dictionary<int, List<Project>>();
+                _seminarsData = new Dictionary<int, List<Seminar>>();
+                Session["ProjectsData"] = _projectsData;
+                Session["SeminarsData"] = _seminarsData;
 
                 // Bind the affiliations data to the repeater
                 BindAffiliationsData();
             }
             else
             {
-                // Retrieve the dictionary from session on postbacks
-                _projectSeminarsData = Session["ProjectSeminarsData"] as Dictionary<int, List<ProjectSeminar>>;
-                if (_projectSeminarsData == null)
+                // Retrieve the dictionaries from session on postbacks
+                _projectsData = Session["ProjectsData"] as Dictionary<int, List<Project>>;
+                if (_projectsData == null)
                 {
-                    _projectSeminarsData = new Dictionary<int, List<ProjectSeminar>>();
-                    Session["ProjectSeminarsData"] = _projectSeminarsData;
+                    _projectsData = new Dictionary<int, List<Project>>();
+                    Session["ProjectsData"] = _projectsData;
+                }
+
+                _seminarsData = Session["SeminarsData"] as Dictionary<int, List<Seminar>>;
+                if (_seminarsData == null)
+                {
+                    _seminarsData = new Dictionary<int, List<Seminar>>();
+                    Session["SeminarsData"] = _seminarsData;
                 }
             }
         }
@@ -56,14 +66,17 @@ namespace AlumniWebsite
             DataTable dt = new DataTable();
             dt.Columns.Add("AffiliationID", typeof(int));
             dt.Columns.Add("AffiliationName", typeof(string));
+            dt.Columns.Add("Projects", typeof(bool));
+            dt.Columns.Add("Seminars", typeof(bool));
+            dt.Columns.Add("ExpertArea", typeof(bool));
 
-            // Fetch affiliation names from the database
+            // Fetch affiliation names and settings from the database
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["AlumniDBConnection"].ConnectionString))
             {
                 conn.Open();
                 foreach (int affiliationId in selectedAffiliationIds)
                 {
-                    string query = "SELECT AffiliationID, AffiliationName FROM Affiliations WHERE AffiliationID = @AffiliationID";
+                    string query = "SELECT AffiliationID, AffiliationName, Projects, Seminars, ExpertArea FROM Affiliations WHERE AffiliationID = @AffiliationID";
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@AffiliationID", affiliationId);
@@ -74,12 +87,20 @@ namespace AlumniWebsite
                                 DataRow row = dt.NewRow();
                                 row["AffiliationID"] = reader["AffiliationID"];
                                 row["AffiliationName"] = reader["AffiliationName"];
+                                row["Projects"] = reader["Projects"];
+                                row["Seminars"] = reader["Seminars"];
+                                row["ExpertArea"] = reader["ExpertArea"];
                                 dt.Rows.Add(row);
 
-                                // Initialize the project/seminar list for this affiliation
-                                if (!_projectSeminarsData.ContainsKey(affiliationId))
+                                // Initialize the project/seminar lists for this affiliation
+                                int affId = Convert.ToInt32(reader["AffiliationID"]);
+                                if (!_projectsData.ContainsKey(affId))
                                 {
-                                    _projectSeminarsData[affiliationId] = new List<ProjectSeminar>();
+                                    _projectsData[affId] = new List<Project>();
+                                }
+                                if (!_seminarsData.ContainsKey(affId))
+                                {
+                                    _seminarsData[affId] = new List<Seminar>();
                                 }
                             }
                         }
@@ -98,22 +119,62 @@ namespace AlumniWebsite
             {
                 DataRowView rowView = e.Item.DataItem as DataRowView;
                 int affiliationId = Convert.ToInt32(rowView["AffiliationID"]);
+                bool hasProjects = Convert.ToBoolean(rowView["Projects"]);
+                bool hasSeminars = Convert.ToBoolean(rowView["Seminars"]);
+                bool hasExpertArea = Convert.ToBoolean(rowView["ExpertArea"]);
 
-                // Find the country dropdown
+                // Find the country dropdowns
                 DropDownList ddlCountry = e.Item.FindControl("ddlCountry") as DropDownList;
                 if (ddlCountry != null)
                 {
-                    // Populate the country dropdown
                     PopulateCountryDropdown(ddlCountry);
                 }
 
-                // Find the projects/seminars grid
-                GridView gvProjectsSeminars = e.Item.FindControl("gvProjectsSeminars") as GridView;
-                if (gvProjectsSeminars != null && _projectSeminarsData.ContainsKey(affiliationId))
+                DropDownList ddlProjectCountry = e.Item.FindControl("ddlProjectCountry") as DropDownList;
+                if (ddlProjectCountry != null)
                 {
-                    // Bind the projects/seminars data to the grid
-                    gvProjectsSeminars.DataSource = _projectSeminarsData[affiliationId];
-                    gvProjectsSeminars.DataBind();
+                    PopulateCountryDropdown(ddlProjectCountry);
+                }
+
+                DropDownList ddlSeminarCountry = e.Item.FindControl("ddlSeminarCountry") as DropDownList;
+                if (ddlSeminarCountry != null)
+                {
+                    PopulateCountryDropdown(ddlSeminarCountry);
+                }
+
+                // Show/hide sections based on affiliation settings
+                Panel pnlProjects = e.Item.FindControl("pnlProjects") as Panel;
+                if (pnlProjects != null)
+                {
+                    pnlProjects.Visible = hasProjects;
+                }
+
+                Panel pnlSeminars = e.Item.FindControl("pnlSeminars") as Panel;
+                if (pnlSeminars != null)
+                {
+                    pnlSeminars.Visible = hasSeminars;
+                }
+
+                Panel pnlExpertArea = e.Item.FindControl("pnlExpertArea") as Panel;
+                if (pnlExpertArea != null)
+                {
+                    pnlExpertArea.Visible = hasExpertArea;
+                }
+
+                // Bind the projects data to the grid
+                GridView gvProjects = e.Item.FindControl("gvProjects") as GridView;
+                if (gvProjects != null && _projectsData.ContainsKey(affiliationId))
+                {
+                    gvProjects.DataSource = _projectsData[affiliationId];
+                    gvProjects.DataBind();
+                }
+
+                // Bind the seminars data to the grid
+                GridView gvSeminars = e.Item.FindControl("gvSeminars") as GridView;
+                if (gvSeminars != null && _seminarsData.ContainsKey(affiliationId))
+                {
+                    gvSeminars.DataSource = _seminarsData[affiliationId];
+                    gvSeminars.DataBind();
                 }
             }
         }
@@ -147,7 +208,7 @@ namespace AlumniWebsite
             }
         }
 
-        protected void btnAddProjectSeminar_Click(object sender, EventArgs e)
+        protected void btnAddProject_Click(object sender, EventArgs e)
         {
             // Find the parent repeater item
             Button btn = sender as Button;
@@ -164,28 +225,32 @@ namespace AlumniWebsite
                 TextBox txtProjectNumber = item.FindControl("txtProjectNumber") as TextBox;
                 TextBox txtProjectFromDate = item.FindControl("txtProjectFromDate") as TextBox;
                 TextBox txtProjectToDate = item.FindControl("txtProjectToDate") as TextBox;
-                CheckBox chkIsProject = item.FindControl("chkIsProject") as CheckBox;
+                TextBox txtProjectMajorArea = item.FindControl("txtProjectMajorArea") as TextBox;
+                TextBox txtProjectSubArea = item.FindControl("txtProjectSubArea") as TextBox;
+                DropDownList ddlProjectCountry = item.FindControl("ddlProjectCountry") as DropDownList;
 
                 // Validate the input
                 if (string.IsNullOrWhiteSpace(txtProjectTitle.Text) || string.IsNullOrWhiteSpace(txtProjectFromDate.Text))
                 {
-                    ShowMessage("Title and From Date are required for projects/seminars.", false);
+                    ShowMessage("Title and From Date are required for projects.", false);
                     return;
                 }
 
-                // Create the project/seminar object
-                ProjectSeminar ps = new ProjectSeminar
+                // Create the project object
+                Project project = new Project
                 {
                     Title = txtProjectTitle.Text.Trim(),
                     Number = txtProjectNumber.Text.Trim(),
-                    IsProject = chkIsProject.Checked
+                    MajorArea = txtProjectMajorArea.Text.Trim(),
+                    SubArea = txtProjectSubArea.Text.Trim(),
+                    CountryID = Convert.ToInt32(ddlProjectCountry.SelectedValue)
                 };
 
                 // Parse dates
                 DateTime fromDate;
                 if (DateTime.TryParse(txtProjectFromDate.Text, out fromDate))
                 {
-                    ps.FromDate = fromDate;
+                    project.FromDate = fromDate;
                 }
                 else
                 {
@@ -198,7 +263,7 @@ namespace AlumniWebsite
                 {
                     if (DateTime.TryParse(txtProjectToDate.Text, out toDate))
                     {
-                        ps.ToDate = toDate;
+                        project.ToDate = toDate;
                     }
                     else
                     {
@@ -215,30 +280,132 @@ namespace AlumniWebsite
                 }
 
                 // Add to the dictionary
-                if (!_projectSeminarsData.ContainsKey(affiliationId))
+                if (!_projectsData.ContainsKey(affiliationId))
                 {
-                    _projectSeminarsData[affiliationId] = new List<ProjectSeminar>();
+                    _projectsData[affiliationId] = new List<Project>();
                 }
-                _projectSeminarsData[affiliationId].Add(ps);
+                _projectsData[affiliationId].Add(project);
 
                 // Update the session
-                Session["ProjectSeminarsData"] = _projectSeminarsData;
+                Session["ProjectsData"] = _projectsData;
 
                 // Rebind the grid
-                GridView gvProjectsSeminars = item.FindControl("gvProjectsSeminars") as GridView;
-                gvProjectsSeminars.DataSource = _projectSeminarsData[affiliationId];
-                gvProjectsSeminars.DataBind();
+                GridView gvProjects = item.FindControl("gvProjects") as GridView;
+                gvProjects.DataSource = _projectsData[affiliationId];
+                gvProjects.DataBind();
 
                 // Clear the form fields
                 txtProjectTitle.Text = "";
                 txtProjectNumber.Text = "";
                 txtProjectFromDate.Text = "";
                 txtProjectToDate.Text = "";
-                chkIsProject.Checked = false;
+                txtProjectMajorArea.Text = "";
+                txtProjectSubArea.Text = "";
+                ddlProjectCountry.SelectedValue = "0";
             }
         }
 
-        protected void ProjectSeminarCommand(object sender, CommandEventArgs e)
+        protected void btnAddSeminar_Click(object sender, EventArgs e)
+        {
+            // Find the parent repeater item
+            Button btn = sender as Button;
+            RepeaterItem item = btn.NamingContainer as RepeaterItem;
+
+            if (item != null)
+            {
+                // Get the affiliation ID
+                HiddenField hdnAffiliationID = item.FindControl("hdnAffiliationID") as HiddenField;
+                int affiliationId = Convert.ToInt32(hdnAffiliationID.Value);
+
+                // Get the form fields
+                TextBox txtSeminarTitle = item.FindControl("txtSeminarTitle") as TextBox;
+                TextBox txtSeminarNumber = item.FindControl("txtSeminarNumber") as TextBox;
+                TextBox txtSeminarFromDate = item.FindControl("txtSeminarFromDate") as TextBox;
+                TextBox txtSeminarToDate = item.FindControl("txtSeminarToDate") as TextBox;
+                TextBox txtSeminarVenue = item.FindControl("txtSeminarVenue") as TextBox;
+                TextBox txtSeminarMajorArea = item.FindControl("txtSeminarMajorArea") as TextBox;
+                TextBox txtSeminarSubArea = item.FindControl("txtSeminarSubArea") as TextBox;
+                DropDownList ddlSeminarCountry = item.FindControl("ddlSeminarCountry") as DropDownList;
+
+                // Validate the input
+                if (string.IsNullOrWhiteSpace(txtSeminarTitle.Text) || string.IsNullOrWhiteSpace(txtSeminarFromDate.Text))
+                {
+                    ShowMessage("Title and From Date are required for seminars.", false);
+                    return;
+                }
+
+                // Create the seminar object
+                Seminar seminar = new Seminar
+                {
+                    Title = txtSeminarTitle.Text.Trim(),
+                    Number = txtSeminarNumber.Text.Trim(),
+                    Venue = txtSeminarVenue.Text.Trim(),
+                    MajorArea = txtSeminarMajorArea.Text.Trim(),
+                    SubArea = txtSeminarSubArea.Text.Trim(),
+                    CountryID = Convert.ToInt32(ddlSeminarCountry.SelectedValue)
+                };
+
+                // Parse dates
+                DateTime fromDate;
+                if (DateTime.TryParse(txtSeminarFromDate.Text, out fromDate))
+                {
+                    seminar.FromDate = fromDate;
+                }
+                else
+                {
+                    ShowMessage("Invalid From Date format.", false);
+                    return;
+                }
+
+                DateTime toDate;
+                if (!string.IsNullOrWhiteSpace(txtSeminarToDate.Text))
+                {
+                    if (DateTime.TryParse(txtSeminarToDate.Text, out toDate))
+                    {
+                        seminar.ToDate = toDate;
+                    }
+                    else
+                    {
+                        ShowMessage("Invalid To Date format.", false);
+                        return;
+                    }
+
+                    // Validate that FromDate is before or equal to ToDate
+                    if (fromDate > toDate)
+                    {
+                        ShowMessage("From Date must be before or equal to To Date.", false);
+                        return;
+                    }
+                }
+
+                // Add to the dictionary
+                if (!_seminarsData.ContainsKey(affiliationId))
+                {
+                    _seminarsData[affiliationId] = new List<Seminar>();
+                }
+                _seminarsData[affiliationId].Add(seminar);
+
+                // Update the session
+                Session["SeminarsData"] = _seminarsData;
+
+                // Rebind the grid
+                GridView gvSeminars = item.FindControl("gvSeminars") as GridView;
+                gvSeminars.DataSource = _seminarsData[affiliationId];
+                gvSeminars.DataBind();
+
+                // Clear the form fields
+                txtSeminarTitle.Text = "";
+                txtSeminarNumber.Text = "";
+                txtSeminarFromDate.Text = "";
+                txtSeminarToDate.Text = "";
+                txtSeminarVenue.Text = "";
+                txtSeminarMajorArea.Text = "";
+                txtSeminarSubArea.Text = "";
+                ddlSeminarCountry.SelectedValue = "0";
+            }
+        }
+
+        protected void ProjectCommand(object sender, CommandEventArgs e)
         {
             if (e.CommandName == "Remove")
             {
@@ -256,15 +423,47 @@ namespace AlumniWebsite
                 int index = Convert.ToInt32(e.CommandArgument);
 
                 // Remove the item
-                if (_projectSeminarsData.ContainsKey(affiliationId) && index < _projectSeminarsData[affiliationId].Count)
+                if (_projectsData.ContainsKey(affiliationId) && index < _projectsData[affiliationId].Count)
                 {
-                    _projectSeminarsData[affiliationId].RemoveAt(index);
+                    _projectsData[affiliationId].RemoveAt(index);
 
                     // Update the session
-                    Session["ProjectSeminarsData"] = _projectSeminarsData;
+                    Session["ProjectsData"] = _projectsData;
 
                     // Rebind the grid
-                    gv.DataSource = _projectSeminarsData[affiliationId];
+                    gv.DataSource = _projectsData[affiliationId];
+                    gv.DataBind();
+                }
+            }
+        }
+
+        protected void SeminarCommand(object sender, CommandEventArgs e)
+        {
+            if (e.CommandName == "Remove")
+            {
+                // Get the parent controls
+                LinkButton btn = sender as LinkButton;
+                GridViewRow row = btn.NamingContainer as GridViewRow;
+                GridView gv = row.NamingContainer as GridView;
+                RepeaterItem item = gv.NamingContainer as RepeaterItem;
+
+                // Get the affiliation ID
+                HiddenField hdnAffiliationID = item.FindControl("hdnAffiliationID") as HiddenField;
+                int affiliationId = Convert.ToInt32(hdnAffiliationID.Value);
+
+                // Get the index to remove
+                int index = Convert.ToInt32(e.CommandArgument);
+
+                // Remove the item
+                if (_seminarsData.ContainsKey(affiliationId) && index < _seminarsData[affiliationId].Count)
+                {
+                    _seminarsData[affiliationId].RemoveAt(index);
+
+                    // Update the session
+                    Session["SeminarsData"] = _seminarsData;
+
+                    // Rebind the grid
+                    gv.DataSource = _seminarsData[affiliationId];
                     gv.DataBind();
                 }
             }
@@ -292,16 +491,22 @@ namespace AlumniWebsite
                             // Process each affiliation
                             foreach (RepeaterItem item in rptAffiliations.Items)
                             {
-                                // Get affiliation ID
+                                // Get affiliation ID and settings
                                 HiddenField hdnAffiliationID = item.FindControl("hdnAffiliationID") as HiddenField;
                                 int affiliationId = Convert.ToInt32(hdnAffiliationID.Value);
-                                System.Diagnostics.Debug.WriteLine("affiliationId : " + affiliationId);
+                                HiddenField hdnHasProjects = item.FindControl("hdnHasProjects") as HiddenField;
+                                HiddenField hdnHasSeminars = item.FindControl("hdnHasSeminars") as HiddenField;
+                                HiddenField hdnHasExpertArea = item.FindControl("hdnHasExpertArea") as HiddenField;
+
+                                bool hasProjects = Convert.ToBoolean(hdnHasProjects.Value);
+                                bool hasSeminars = Convert.ToBoolean(hdnHasSeminars.Value);
+                                bool hasExpertArea = Convert.ToBoolean(hdnHasExpertArea.Value);
 
                                 // Get form fields
                                 TextBox txtFromDate = item.FindControl("txtFromDate") as TextBox;
                                 TextBox txtToDate = item.FindControl("txtToDate") as TextBox;
                                 DropDownList ddlCountry = item.FindControl("ddlCountry") as DropDownList;
-                                TextBox txtDetails = item.FindControl("txtDetails") as TextBox;
+                                TextBox txtExpertArea = item.FindControl("txtExpertArea") as TextBox;
 
                                 // Parse dates
                                 DateTime fromDate;
@@ -329,17 +534,26 @@ namespace AlumniWebsite
                                 }
 
                                 int countryId = Convert.ToInt32(ddlCountry.SelectedValue);
-                                string details = txtDetails.Text.Trim();
+                                string expertArea = hasExpertArea ? txtExpertArea.Text.Trim() : "No";
 
                                 // Save the alumni affiliation
-                                SaveAlumniAffiliation(registrationId, affiliationId, fromDate, toDate, countryId, details, conn, transaction);
+                                int alumniAffiliationId = SaveAlumniAffiliation(registrationId, affiliationId, fromDate, toDate, countryId, expertArea, conn, transaction);
 
-                                // Save projects/seminars
-                                if (_projectSeminarsData.ContainsKey(affiliationId))
+                                // Save projects if applicable
+                                if (hasProjects && _projectsData.ContainsKey(affiliationId))
                                 {
-                                    foreach (ProjectSeminar ps in _projectSeminarsData[affiliationId])
+                                    foreach (Project project in _projectsData[affiliationId])
                                     {
-                                        SaveProjectSeminar(registrationId, affiliationId, ps, conn, transaction);
+                                        SaveProject(alumniAffiliationId, project, conn, transaction);
+                                    }
+                                }
+
+                                // Save seminars if applicable
+                                if (hasSeminars && _seminarsData.ContainsKey(affiliationId))
+                                {
+                                    foreach (Seminar seminar in _seminarsData[affiliationId])
+                                    {
+                                        SaveSeminar(alumniAffiliationId, seminar, conn, transaction);
                                     }
                                 }
                             }
@@ -351,7 +565,8 @@ namespace AlumniWebsite
                             ShowMessage("Your affiliation details have been saved successfully!", true);
 
                             // Clear the session data
-                            Session.Remove("ProjectSeminarsData");
+                            Session.Remove("ProjectsData");
+                            Session.Remove("SeminarsData");
 
                             // Redirect to a confirmation page or home page
                             // You can uncomment this line to redirect to your desired page
@@ -371,14 +586,13 @@ namespace AlumniWebsite
             }
         }
 
-        private void SaveAlumniAffiliation(Guid alumniId, int affiliationId, DateTime fromDate, DateTime? toDate,
-            int countryId, string details, SqlConnection conn, SqlTransaction transaction)
+        private int SaveAlumniAffiliation(Guid alumniId, int affiliationId, DateTime fromDate, DateTime? toDate,
+            int countryId, string expertArea, SqlConnection conn, SqlTransaction transaction)
         {
-            System.Diagnostics.Debug.WriteLine("affiliationId inside SaveAlumniAffiliation: " + affiliationId);
-            System.Diagnostics.Debug.WriteLine("alumniId inside SaveAlumniAffiliation: " + alumniId);
             string query = @"
-                INSERT INTO AlumniAffiliation (alumniID, affiliationID, fromDate, toDate, countryID, details) 
-                VALUES (@AlumniID, @AffiliationID, @FromDate, @ToDate, @CountryID, @Details)";
+                INSERT INTO AlumniAffiliation (alumniID, affiliationID, fromDate, toDate, countryID, expertArea) 
+                VALUES (@AlumniID, @AffiliationID, @FromDate, @ToDate, @CountryID, @ExpertArea);
+                SELECT SCOPE_IDENTITY();";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
@@ -393,42 +607,94 @@ namespace AlumniWebsite
 
                 cmd.Parameters.AddWithValue("@CountryID", countryId);
 
-                if (!string.IsNullOrWhiteSpace(details))
-                    cmd.Parameters.AddWithValue("@Details", details);
+                if (!string.IsNullOrWhiteSpace(expertArea))
+                    cmd.Parameters.AddWithValue("@ExpertArea", expertArea);
                 else
-                    cmd.Parameters.AddWithValue("@Details", DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExpertArea", DBNull.Value);
+
+                // Get the identity of the inserted row
+                return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+
+        private void SaveProject(int alumniAffiliationId, Project project, SqlConnection conn, SqlTransaction transaction)
+        {
+            string query = @"
+                INSERT INTO Projects (alumniAffiliationID, title, number, fromDate, toDate, majorArea, subArea, country) 
+                VALUES (@AlumniAffiliationID, @Title, @Number, @FromDate, @ToDate, @MajorArea, @SubArea, @Country)";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@AlumniAffiliationID", alumniAffiliationId);
+                cmd.Parameters.AddWithValue("@Title", project.Title);
+
+                if (!string.IsNullOrWhiteSpace(project.Number))
+                    cmd.Parameters.AddWithValue("@Number", project.Number);
+                else
+                    cmd.Parameters.AddWithValue("@Number", DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@FromDate", project.FromDate);
+
+                if (project.ToDate.HasValue)
+                    cmd.Parameters.AddWithValue("@ToDate", project.ToDate.Value);
+                else
+                    cmd.Parameters.AddWithValue("@ToDate", DBNull.Value);
+
+                if (!string.IsNullOrWhiteSpace(project.MajorArea))
+                    cmd.Parameters.AddWithValue("@MajorArea", project.MajorArea);
+                else
+                    cmd.Parameters.AddWithValue("@MajorArea", DBNull.Value);
+
+                if (!string.IsNullOrWhiteSpace(project.SubArea))
+                    cmd.Parameters.AddWithValue("@SubArea", project.SubArea);
+                else
+                    cmd.Parameters.AddWithValue("@SubArea", DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@Country", project.CountryID);
 
                 cmd.ExecuteNonQuery();
             }
         }
 
-        private void SaveProjectSeminar(Guid alumniId, int alumniAffiliationId, ProjectSeminar ps,
-            SqlConnection conn, SqlTransaction transaction)
+        private void SaveSeminar(int alumniAffiliationId, Seminar seminar, SqlConnection conn, SqlTransaction transaction)
         {
-            System.Diagnostics.Debug.WriteLine("affiliationId inside SaveProjectSeminar: " + alumniAffiliationId);
-            System.Diagnostics.Debug.WriteLine("alumniId inside SaveProjectSeminar: " + alumniId);
             string query = @"
-                INSERT INTO ProjectsSeminars (alumniAffiliationID, title, number, fromDate, toDate, isProject) 
-                VALUES (@AlumniAffiliationID, @Title, @Number, @FromDate, @ToDate, @IsProject)";
+                INSERT INTO Seminars (alumniAffiliationID, fromDate, toDate, venue, title, number, majorArea, subArea, country) 
+                VALUES (@AlumniAffiliationID, @FromDate, @ToDate, @Venue, @Title, @Number, @MajorArea, @SubArea, @Country)";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
             {
                 cmd.Parameters.AddWithValue("@AlumniAffiliationID", alumniAffiliationId);
-                cmd.Parameters.AddWithValue("@Title", ps.Title);
+                cmd.Parameters.AddWithValue("@Title", seminar.Title);
 
-                if (!string.IsNullOrWhiteSpace(ps.Number))
-                    cmd.Parameters.AddWithValue("@Number", ps.Number);
+                if (!string.IsNullOrWhiteSpace(seminar.Number))
+                    cmd.Parameters.AddWithValue("@Number", seminar.Number);
                 else
                     cmd.Parameters.AddWithValue("@Number", DBNull.Value);
 
-                cmd.Parameters.AddWithValue("@FromDate", ps.FromDate);
+                cmd.Parameters.AddWithValue("@FromDate", seminar.FromDate);
 
-                if (ps.ToDate.HasValue)
-                    cmd.Parameters.AddWithValue("@ToDate", ps.ToDate.Value);
+                if (seminar.ToDate.HasValue)
+                    cmd.Parameters.AddWithValue("@ToDate", seminar.ToDate.Value);
                 else
                     cmd.Parameters.AddWithValue("@ToDate", DBNull.Value);
 
-                cmd.Parameters.AddWithValue("@IsProject", ps.IsProject);
+                if (!string.IsNullOrWhiteSpace(seminar.Venue))
+                    cmd.Parameters.AddWithValue("@Venue", seminar.Venue);
+                else
+                    cmd.Parameters.AddWithValue("@Venue", DBNull.Value);
+
+                if (!string.IsNullOrWhiteSpace(seminar.MajorArea))
+                    cmd.Parameters.AddWithValue("@MajorArea", seminar.MajorArea);
+                else
+                    cmd.Parameters.AddWithValue("@MajorArea", DBNull.Value);
+
+                if (!string.IsNullOrWhiteSpace(seminar.SubArea))
+                    cmd.Parameters.AddWithValue("@SubArea", seminar.SubArea);
+                else
+                    cmd.Parameters.AddWithValue("@SubArea", DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@Country", seminar.CountryID);
 
                 cmd.ExecuteNonQuery();
             }
@@ -437,7 +703,8 @@ namespace AlumniWebsite
         protected void btnCancel_Click(object sender, EventArgs e)
         {
             // Clear session data and redirect to a previous page
-            Session.Remove("ProjectSeminarsData");
+            Session.Remove("ProjectsData");
+            Session.Remove("SeminarsData");
             Response.Redirect("~/Default.aspx"); // Replace with your desired page
         }
 
@@ -448,15 +715,29 @@ namespace AlumniWebsite
             pnlMessage.CssClass = isSuccess ? "alert alert-success" : "alert alert-danger";
         }
 
-        // Class to store Project/Seminar data
+        // Class to store Project data
         [Serializable]
-        public class ProjectSeminar
+        public class Project
         {
             public string Title { get; set; }
             public string Number { get; set; }
             public DateTime FromDate { get; set; }
             public DateTime? ToDate { get; set; }
-            public bool IsProject { get; set; }
+            public string MajorArea { get; set; }
+            public string SubArea { get; set; }
+            public int CountryID { get; set; }
+        }
+
+        public class Seminar
+        {
+            public string Title { get; set; }
+            public string Number { get; set; }
+            public DateTime FromDate { get; set; }
+            public DateTime? ToDate { get; set; }
+            public string MajorArea { get; set; }
+            public string SubArea { get; set; }
+            public int CountryID { get; set; }
+            public string Venue { get; set; }
         }
     }
 }

@@ -17,8 +17,9 @@
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             padding: 30px;
-            margin-top: 90px;
+            margin-top: 110px;
             margin-left: 95px;
+            margin-bottom:30px;
         }
 
         h1 {
@@ -188,6 +189,7 @@
                 accent-color: #3498db;
             }
 
+
             .checkbox-list label {
                 cursor: pointer;
                 padding: 6px 10px;
@@ -232,6 +234,12 @@
             padding: 15px;
             margin-top: 15px;
             border: 1px dashed #b8daee;
+        }
+
+        /* Edit button styling */
+        .edit-button-container {
+            text-align: center;
+            margin-top: 15px;
         }
     </style>
     <script type="text/javascript">
@@ -331,6 +339,12 @@
                     <p>A user with the provided email ID or contact number already exists in our system.</p>
                     <h4 style="margin-bottom: 5px;">Existing User Information:</h4>
                     <asp:Literal ID="litUserInfo" runat="server"></asp:Literal>
+
+                    <!-- Add Edit button here -->
+                    <div class="edit-button-container">
+                        <asp:Button ID="btnEditUser" runat="server" Text="Edit Information" CssClass="btn btn-primary"
+                            OnClick="btnEditUser_Click" />
+                    </div>
                 </div>
             </asp:Panel>
         </div>

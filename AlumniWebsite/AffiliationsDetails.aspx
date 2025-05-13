@@ -326,6 +326,9 @@
                         <div class="affiliation-section">
                             <h4><%# Eval("AffiliationName") %></h4>
                             <asp:HiddenField ID="hdnAffiliationID" runat="server" Value='<%# Eval("AffiliationID") %>' />
+                            <asp:HiddenField ID="hdnHasProjects" runat="server" Value='<%# Eval("Projects") %>' />
+                            <asp:HiddenField ID="hdnHasSeminars" runat="server" Value='<%# Eval("Seminars") %>' />
+                            <asp:HiddenField ID="hdnHasExpertArea" runat="server" Value='<%# Eval("ExpertArea") %>' />
 
                             <div class="form-group">
                                 <label>From Date:</label>
@@ -349,32 +352,35 @@
                                     ErrorMessage="Country is required" Display="Dynamic" CssClass="text-danger" InitialValue="0"></asp:RequiredFieldValidator>
                             </div>
 
-                            <div class="form-group">
-                                <label>Details:</label>
-                                <asp:TextBox ID="txtDetails" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3"></asp:TextBox>
-                            </div>
+                            <asp:Panel ID="pnlExpertArea" runat="server" Visible='<%# Convert.ToBoolean(Eval("ExpertArea")) %>'>
+                                <div class="form-group">
+                                    <label>Expert Area:</label>
+                                    <asp:TextBox ID="txtExpertArea" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3"></asp:TextBox>
+                                </div>
+                            </asp:Panel>
 
-                            <div class="projects-seminars-section">
-                                <h5>Projects/Seminars</h5>
-                                <asp:GridView ID="gvProjectsSeminars" runat="server" AutoGenerateColumns="false" CssClass="table table-striped"
-                                    ShowHeaderWhenEmpty="true" EmptyDataText="No projects or seminars added yet.">
+                            <asp:Panel ID="pnlProjects" runat="server" Visible='<%# Convert.ToBoolean(Eval("Projects")) %>'>
+                                <h5>Projects</h5>
+                                <asp:GridView ID="gvProjects" runat="server" AutoGenerateColumns="false" CssClass="table table-striped"
+                                    ShowHeaderWhenEmpty="true" EmptyDataText="No projects added yet.">
                                     <Columns>
                                         <asp:BoundField DataField="Title" HeaderText="Title" />
                                         <asp:BoundField DataField="Number" HeaderText="Number/Code" />
                                         <asp:BoundField DataField="FromDate" HeaderText="From Date" DataFormatString="{0:MM/dd/yyyy}" />
                                         <asp:BoundField DataField="ToDate" HeaderText="To Date" DataFormatString="{0:MM/dd/yyyy}" />
-                                        <asp:CheckBoxField DataField="IsProject" HeaderText="Is Project" />
+                                        <asp:BoundField DataField="MajorArea" HeaderText="Major Area" />
+                                        <asp:BoundField DataField="SubArea" HeaderText="Sub Area" />
                                         <asp:TemplateField HeaderText="Actions">
                                             <ItemTemplate>
                                                 <asp:LinkButton ID="lnkRemove" runat="server" Text="Remove" CssClass="btn btn-xs btn-danger"
-                                                    CommandName="Remove" CommandArgument='<%# Container.DataItemIndex %>' OnCommand="ProjectSeminarCommand"></asp:LinkButton>
+                                                    CommandName="Remove" CommandArgument='<%# Container.DataItemIndex %>' OnCommand="ProjectCommand"></asp:LinkButton>
                                             </ItemTemplate>
                                         </asp:TemplateField>
                                     </Columns>
                                 </asp:GridView>
 
-                                <div class="project-seminar-form">
-                                    <h5>Add New Project/Seminar</h5>
+                                <div class="project-form">
+                                    <h5>Add New Project</h5>
                                     <div class="form-group">
                                         <label>Title:</label>
                                         <asp:TextBox ID="txtProjectTitle" runat="server" CssClass="form-control"></asp:TextBox>
@@ -396,18 +402,92 @@
                                     </div>
 
                                     <div class="form-group">
-                                        <label>Type:</label>
-                                        <div class="checkbox">
-                                            <label>
-                                                <asp:CheckBox ID="chkIsProject" runat="server" Text="This is a Project (uncheck for Seminar)" />
-                                            </label>
-                                        </div>
+                                        <label>Major Area:</label>
+                                        <asp:TextBox ID="txtProjectMajorArea" runat="server" CssClass="form-control"></asp:TextBox>
                                     </div>
 
-                                    <asp:Button ID="btnAddProjectSeminar" runat="server" Text="Add Project/Seminar" CssClass="btn btn-info"
-                                        OnClick="btnAddProjectSeminar_Click" CausesValidation="false" />
+                                    <div class="form-group">
+                                        <label>Sub Area:</label>
+                                        <asp:TextBox ID="txtProjectSubArea" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Country:</label>
+                                        <asp:DropDownList ID="ddlProjectCountry" runat="server" CssClass="form-control"></asp:DropDownList>
+                                    </div>
+
+                                    <asp:Button ID="btnAddProject" runat="server" Text="Add Project" CssClass="btn btn-info"
+                                        OnClick="btnAddProject_Click" CausesValidation="false" />
                                 </div>
-                            </div>
+                            </asp:Panel>
+
+                            <asp:Panel ID="pnlSeminars" runat="server" Visible='<%# Convert.ToBoolean(Eval("Seminars")) %>'>
+                                <h5>Seminars</h5>
+                                <asp:GridView ID="gvSeminars" runat="server" AutoGenerateColumns="false" CssClass="table table-striped"
+                                    ShowHeaderWhenEmpty="true" EmptyDataText="No seminars added yet.">
+                                    <Columns>
+                                        <asp:BoundField DataField="Title" HeaderText="Title" />
+                                        <asp:BoundField DataField="Number" HeaderText="Number/Code" />
+                                        <asp:BoundField DataField="FromDate" HeaderText="From Date" DataFormatString="{0:MM/dd/yyyy}" />
+                                        <asp:BoundField DataField="ToDate" HeaderText="To Date" DataFormatString="{0:MM/dd/yyyy}" />
+                                        <asp:BoundField DataField="Venue" HeaderText="Venue" />
+                                        <asp:BoundField DataField="MajorArea" HeaderText="Major Area" />
+                                        <asp:BoundField DataField="SubArea" HeaderText="Sub Area" />
+                                        <asp:TemplateField HeaderText="Actions">
+                                            <ItemTemplate>
+                                                <asp:LinkButton ID="lnkRemove" runat="server" Text="Remove" CssClass="btn btn-xs btn-danger"
+                                                    CommandName="Remove" CommandArgument='<%# Container.DataItemIndex %>' OnCommand="SeminarCommand"></asp:LinkButton>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+                                    </Columns>
+                                </asp:GridView>
+
+                                <div class="seminar-form">
+                                    <h5>Add New Seminar</h5>
+                                    <div class="form-group">
+                                        <label>Title:</label>
+                                        <asp:TextBox ID="txtSeminarTitle" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Number/Code:</label>
+                                        <asp:TextBox ID="txtSeminarNumber" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>From Date:</label>
+                                        <asp:TextBox ID="txtSeminarFromDate" runat="server" CssClass="form-control datepicker" placeholder="MM/DD/YYYY"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>To Date:</label>
+                                        <asp:TextBox ID="txtSeminarToDate" runat="server" CssClass="form-control datepicker" placeholder="MM/DD/YYYY"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Venue:</label>
+                                        <asp:TextBox ID="txtSeminarVenue" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Major Area:</label>
+                                        <asp:TextBox ID="txtSeminarMajorArea" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Sub Area:</label>
+                                        <asp:TextBox ID="txtSeminarSubArea" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Country:</label>
+                                        <asp:DropDownList ID="ddlSeminarCountry" runat="server" CssClass="form-control"></asp:DropDownList>
+                                    </div>
+
+                                    <asp:Button ID="btnAddSeminar" runat="server" Text="Add Seminar" CssClass="btn btn-info"
+                                        OnClick="btnAddSeminar_Click" CausesValidation="false" />
+                                </div>
+                            </asp:Panel>
 
                             <hr />
                         </div>
