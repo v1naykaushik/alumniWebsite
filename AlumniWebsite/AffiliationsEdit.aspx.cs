@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 //AlumniDBConnection
+//for showing in git changes only
 namespace AlumniWebsite
 {
     public partial class AffiliationsEdit : System.Web.UI.Page
