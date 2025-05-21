@@ -132,6 +132,13 @@ namespace AlumniWebsite
                         DataTable dtProjects = GetProjects(affiliationID);
                         rptProjects.DataSource = dtProjects;
                         rptProjects.DataBind();
+
+                        // Populate country dropdown for new project form
+                        DropDownList ddlNewProjectCountry = (DropDownList)e.Item.FindControl("ddlNewProjectCountry");
+                        if (ddlNewProjectCountry != null)
+                        {
+                            PopulateCountriesDropDown(ddlNewProjectCountry);
+                        }
                     }
                 }
 
@@ -147,6 +154,13 @@ namespace AlumniWebsite
                         DataTable dtSeminars = GetSeminars(affiliationID);
                         rptSeminars.DataSource = dtSeminars;
                         rptSeminars.DataBind();
+
+                        // Populate country dropdown for new seminar form
+                        DropDownList ddlNewSeminarCountry = (DropDownList)e.Item.FindControl("ddlNewSeminarCountry");
+                        if (ddlNewSeminarCountry != null)
+                        {
+                            PopulateCountriesDropDown(ddlNewSeminarCountry);
+                        }
                     }
                 }
 
@@ -693,7 +707,7 @@ namespace AlumniWebsite
             }
         }
 
-        protected void btnBackToProfile_Click(object sender, EventArgs e)
+        protected void btnBackToRegistration_Click(object sender, EventArgs e)
         {
             Response.Redirect("~/Registration.aspx");
         }

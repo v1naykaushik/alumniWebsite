@@ -5,82 +5,122 @@
     <style>
         /* Base page style */
         body {
-            font-family: Segoe UI, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-            color: #333;
+          font-family: Segoe UI, sans-serif;
+          margin: 20px 20px 20px 20px; /* Top margin 200px */
+          background-color: #f9f9f9;
+          color: #333;
         }
 
         /* Headings */
-        h1, h2, h3 {
-            color: #2a2a2a;
-            margin-bottom: 10px;
+        h2, h3, h4, h5 {
+          color: #2a2a2a;
+          margin-bottom: 10px;
         }
 
-        /* Panel styling */
-        .panel {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
+        h2 {
+          margin-top: 200px; /* Adds top margin before the heading */
         }
 
-        .panel-success {
-            background-color: #e6ffed;
-            border: 1px solid #b2e0c3;
-            color: #2d6637;
+        /* Panels and sections */
+        .repeater-item,
+        div[id$="pnlNoAffiliations"],
+        div[id$="pnlProjects"],
+        div[id$="pnlSeminars"] {
+          background-color: #ffffff;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          padding: 15px;
+          margin-bottom: 15px;
         }
 
-        .panel-error {
-            background-color: #ffe6e6;
-            border: 1px solid #e0b2b2;
-            color: #992d2d;
+        /* Success / Error panels */
+        div[id$="pnlSuccessMessage"] {
+          background-color: #e6ffed;
+          border: 1px solid #b2e0c3;
+          color: #2d6637;
+        }
+        div[id$="pnlErrorMessage"] {
+          background-color: #ffe6e6;
+          border: 1px solid #e0b2b2;
+          color: #992d2d;
         }
 
-        .panel-info {
-            background-color: #e6f0ff;
-            border: 1px solid #b2cbe0;
-            color: #2d4f99;
+        /* Tables */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 10px;
+        }
+        th, td {
+          padding: 8px;
+          border: 1px solid #ccc;
+          text-align: left;
+        }
+        th {
+          background-color: #f0f0f0;
+          font-weight: bold;
         }
 
-        /* Labels */
-        label {
-            font-weight: bold;
+        /* Form controls */
+        input[type="text"],
+        input[type="date"],
+        select,
+        textarea {
+          width: 100%;
+          max-width: 300px;
+          padding: 6px 8px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-family: inherit;
+          box-sizing: border-box;
+          margin-bottom: 6px;
         }
 
-        /* Repeater styling (item list) */
-        .repeater-item {
-            padding: 10px;
-            margin-bottom: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fff;
+        /* Save Affiliation Button - add spacing below */
+        input[type="submit"],
+        input[type="button"],
+        button {
+          padding: 8px 16px;
+          border: none;
+          background-color: #4CAF50;
+          color: white;
+          cursor: pointer;
+          border-radius: 4px;
+          font-size: 14px;
+          font-family: inherit;
+          margin-top: 8px;
+          margin-bottom: 16px; /* Adds spacing after button */
+        }
+        input[type="submit"]:hover,
+        input[type="button"]:hover,
+        button:hover {
+          background-color: #45a049;
         }
 
-        /* Button styling */
-        .button {
-            padding: 8px 16px;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
+        /* Align From and To date on the same row */
+        .date-range {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
         }
-
-        .button:hover {
-            background-color: #45a049;
+        .date-range label {
+          margin-right: 5px;
+        }
+        .date-range input[type="date"] {
+          max-width: 180px;
         }
 
         /* Utility */
         .text-center {
-            text-align: center;
+          text-align: center;
         }
-
         .hidden {
-            display: none;
+          display: none;
         }
 
     </style>
-    <%--<script type="text/javascript">
+    <script type="text/javascript">
         function validateDates(source, args) {
             var fromDateCtrl = document.getElementById(source.controltovalidate.replace('txtToDate', 'txtFromDate'));
             var toDateCtrl = document.getElementById(source.controltovalidate);
@@ -92,7 +132,7 @@
                 args.IsValid = (fromDate <= toDate);
             }
         }
-    </script>--%>
+    </script>
 
 </asp:Content>
 
@@ -140,8 +180,6 @@
                                     <asp:RequiredFieldValidator ID="reqFromDate" runat="server" ControlToValidate="txtFromDate" 
                                         ErrorMessage="From Date is required" ValidationGroup='<%# "SaveAffiliation_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
-                            <tr>
                                 <td>To Date:</td>
                                 <td>
                                     <asp:TextBox ID="txtToDate" runat="server" TextMode="Date" Text='<%# Bind("toDate", "{0:yyyy-MM-dd}") %>'></asp:TextBox>
@@ -156,15 +194,14 @@
                                     <asp:RequiredFieldValidator ID="reqCountry" runat="server" ControlToValidate="ddlCountry" 
                                         ErrorMessage="Country is required" ValidationGroup='<%# "SaveAffiliation_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
                             <asp:Panel ID="pnlExpertArea" runat="server" Visible='<%# Convert.ToBoolean(Eval("ShowExpertArea")) %>'>
-                                <tr>
                                     <td>Expert Area:</td>
                                     <td>
-                                        <asp:TextBox ID="txtExpertArea" runat="server" Text='<%# Bind("expertArea") %>' TextMode="MultiLine" Rows="3"></asp:TextBox>
+                                        <asp:TextBox ID="txtExpertArea" runat="server" Text='<%# Bind("expertArea") %>' TextMode="MultiLine" Rows="1"></asp:TextBox>
                                     </td>
-                                </tr>
+                                
                             </asp:Panel>
+                            </tr>
                         </table>
                         
                         <asp:Button ID="btnSaveAffiliation" runat="server" Text="Save Affiliation" 
@@ -222,13 +259,12 @@
                                     <asp:RequiredFieldValidator ID="reqNewProjectTitle" runat="server" ControlToValidate="txtNewProjectTitle" 
                                         ErrorMessage="Title is required" ValidationGroup='<%# "AddProject_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
-                            <tr>
                                 <td>Number:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewProjectNumber" runat="server"></asp:TextBox>
                                 </td>
                             </tr>
+                            <div class="date-range">
                             <tr>
                                 <td>From Date:</td>
                                 <td>
@@ -236,8 +272,6 @@
                                     <asp:RequiredFieldValidator ID="reqNewProjectFromDate" runat="server" ControlToValidate="txtNewProjectFromDate" 
                                         ErrorMessage="From Date is required" ValidationGroup='<%# "AddProject_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
-                            <tr>
                                 <td>To Date:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewProjectToDate" runat="server" TextMode="Date"></asp:TextBox>
@@ -245,13 +279,12 @@
                                         ErrorMessage="To Date is required" ValidationGroup='<%# "AddProject_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
                             </tr>
+                            </div>
                             <tr>
                                 <td>Major Area:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewProjectMajorArea" runat="server"></asp:TextBox>
                                 </td>
-                            </tr>
-                            <tr>
                                 <td>Sub Area:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewProjectSubArea" runat="server"></asp:TextBox>
@@ -324,8 +357,7 @@
                                     <asp:RequiredFieldValidator ID="reqNewSeminarTitle" runat="server" ControlToValidate="txtNewSeminarTitle" 
                                         ErrorMessage="Title is required" ValidationGroup='<%# "AddSeminar_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
-                            <tr>
+
                                 <td>Number:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewSeminarNumber" runat="server"></asp:TextBox>
@@ -346,8 +378,7 @@
                                     <asp:RequiredFieldValidator ID="reqNewSeminarFromDate" runat="server" ControlToValidate="txtNewSeminarFromDate" 
                                         ErrorMessage="From Date is required" ValidationGroup='<%# "AddSeminar_" + Eval("id") %>'></asp:RequiredFieldValidator>
                                 </td>
-                            </tr>
-                            <tr>
+
                                 <td>To Date:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewSeminarToDate" runat="server" TextMode="Date"></asp:TextBox>
@@ -360,8 +391,7 @@
                                 <td>
                                     <asp:TextBox ID="txtNewSeminarMajorArea" runat="server"></asp:TextBox>
                                 </td>
-                            </tr>
-                            <tr>
+
                                 <td>Sub Area:</td>
                                 <td>
                                     <asp:TextBox ID="txtNewSeminarSubArea" runat="server"></asp:TextBox>
@@ -388,8 +418,8 @@
         </asp:Repeater>
         
         <!-- Navigation Buttons -->
-        <div>
-            <asp:Button ID="btnBackToProfile" runat="server" Text="Back to Profile" OnClick="btnBackToProfile_Click" />
+        <div style="margin-bottom: 200px;">
+            <asp:Button ID="btnBackToRegistration" runat="server" Text="Back to Registration" OnClick="btnBackToRegistration_Click" />
         </div>
     </div>
 </asp:Content>

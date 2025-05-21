@@ -5,8 +5,8 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Data.SqlClient; // Add this for database operations
-using System.Configuration; // Add this for connection string
+using System.Data.SqlClient;
+using System.Configuration;
 
 namespace AlumniWebsite
 {

@@ -124,11 +124,11 @@ namespace AlumniWebsite
                 bool hasExpertArea = Convert.ToBoolean(rowView["ExpertArea"]);
 
                 // Find the country dropdowns
-                DropDownList ddlCountry = e.Item.FindControl("ddlCountry") as DropDownList;
-                if (ddlCountry != null)
-                {
-                    PopulateCountryDropdown(ddlCountry);
-                }
+                //DropDownList ddlCountry = e.Item.FindControl("ddlCountry") as DropDownList;
+                //if (ddlCountry != null)
+                //{
+                //    PopulateCountryDropdown(ddlCountry);
+                //}
 
                 DropDownList ddlProjectCountry = e.Item.FindControl("ddlProjectCountry") as DropDownList;
                 if (ddlProjectCountry != null)
@@ -505,7 +505,7 @@ namespace AlumniWebsite
                                 // Get form fields
                                 TextBox txtFromDate = item.FindControl("txtFromDate") as TextBox;
                                 TextBox txtToDate = item.FindControl("txtToDate") as TextBox;
-                                DropDownList ddlCountry = item.FindControl("ddlCountry") as DropDownList;
+                                //DropDownList ddlCountry = item.FindControl("ddlCountry") as DropDownList;
                                 TextBox txtExpertArea = item.FindControl("txtExpertArea") as TextBox;
 
                                 // Parse dates
@@ -533,11 +533,11 @@ namespace AlumniWebsite
                                     }
                                 }
 
-                                int countryId = Convert.ToInt32(ddlCountry.SelectedValue);
+                                //int countryId = Convert.ToInt32(ddlCountry.SelectedValue);
                                 string expertArea = hasExpertArea ? txtExpertArea.Text.Trim() : "No";
 
                                 // Save the alumni affiliation
-                                int alumniAffiliationId = SaveAlumniAffiliation(registrationId, affiliationId, fromDate, toDate, countryId, expertArea, conn, transaction);
+                                int alumniAffiliationId = SaveAlumniAffiliation(registrationId, affiliationId, fromDate, toDate, expertArea, conn, transaction);
 
                                 // Save projects if applicable
                                 if (hasProjects && _projectsData.ContainsKey(affiliationId))
@@ -587,11 +587,11 @@ namespace AlumniWebsite
         }
 
         private int SaveAlumniAffiliation(Guid alumniId, int affiliationId, DateTime fromDate, DateTime? toDate,
-            int countryId, string expertArea, SqlConnection conn, SqlTransaction transaction)
+             string expertArea, SqlConnection conn, SqlTransaction transaction)
         {
             string query = @"
-                INSERT INTO AlumniAffiliation (alumniID, affiliationID, fromDate, toDate, countryID, expertArea) 
-                VALUES (@AlumniID, @AffiliationID, @FromDate, @ToDate, @CountryID, @ExpertArea);
+                INSERT INTO AlumniAffiliation (alumniID, affiliationID, fromDate, toDate, expertArea) 
+                VALUES (@AlumniID, @AffiliationID, @FromDate, @ToDate, @ExpertArea);
                 SELECT SCOPE_IDENTITY();";
 
             using (SqlCommand cmd = new SqlCommand(query, conn, transaction))
@@ -605,7 +605,7 @@ namespace AlumniWebsite
                 else
                     cmd.Parameters.AddWithValue("@ToDate", DBNull.Value);
 
-                cmd.Parameters.AddWithValue("@CountryID", countryId);
+                //cmd.Parameters.AddWithValue("@CountryID", countryId);
 
                 if (!string.IsNullOrWhiteSpace(expertArea))
                     cmd.Parameters.AddWithValue("@ExpertArea", expertArea);

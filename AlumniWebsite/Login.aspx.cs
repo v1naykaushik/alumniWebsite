@@ -50,7 +50,7 @@ namespace AlumniWebsite
                         }
                         else
                         {
-                            Response.Redirect("~/");
+                            Response.Redirect("~/Registration.aspx");
                         }
                     }
                     else

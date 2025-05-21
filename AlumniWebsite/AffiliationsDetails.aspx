@@ -345,12 +345,12 @@
                                     ErrorMessage="To Date must be greater than or equal to From Date" Display="Dynamic" CssClass="text-danger"></asp:CompareValidator>
                             </div>
 
-                            <div class="form-group">
+                            <%--<div class="form-group">
                                 <label>Country:</label>
                                 <asp:DropDownList ID="ddlCountry" runat="server" CssClass="form-control"></asp:DropDownList>
                                 <asp:RequiredFieldValidator ID="rfvCountry" runat="server" ControlToValidate="ddlCountry"
                                     ErrorMessage="Country is required" Display="Dynamic" CssClass="text-danger" InitialValue="0"></asp:RequiredFieldValidator>
-                            </div>
+                            </div>--%>
 
                             <asp:Panel ID="pnlExpertArea" runat="server" Visible='<%# Convert.ToBoolean(Eval("ExpertArea")) %>'>
                                 <div class="form-group">

@@ -1,4 +1,4 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/AlumniMaster.Master" AutoEventWireup="true" CodeBehind="Registration.aspx.cs" Inherits="AlumniWebsite.Registration" %>
+﻿<%@ Page Title="Alumni Form" Language="C#" MasterPageFile="~/AlumniMaster.Master" AutoEventWireup="true" CodeBehind="Registration.aspx.cs" Inherits="AlumniWebsite.Registration" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="HeadContent" runat="server">
     <style>
@@ -213,6 +213,8 @@
                 border-color: #2980b9;
             }
 
+
+
         /* Affiliation badge for visual enhancement */
         .affiliation-badge {
             position: absolute;
@@ -315,7 +317,7 @@
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
     <div class="container">
-        <h1>Alumni Registration Form</h1>
+        <h1>Alumni Data Form</h1>
         <div class="form-group">
             <h2>Registration Information</h2>
             <div class="form-row">
